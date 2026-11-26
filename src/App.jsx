@@ -2677,18 +2677,6 @@ export default function App() {
 
           <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
             <button
-              type="button"
-              onClick={() => {
-                if (orders[0]) {
-                  setTrackOrderRef(orders[0].orderNumber);
-                  setTrackMobileVerify(orders[0].mobileNumber.slice(-4));
-                }
-              }}
-              className="text-xs text-[#6F4E37] underline hover:text-[#3B241C]"
-            >
-              Fill latest sample order ({orders[0]?.orderNumber})
-            </button>
-            <button
               type="submit"
               className="px-7 py-3.5 rounded-2xl bg-[#3B241C] hover:bg-[#6F4E37] text-white font-bold text-sm transition"
             >
@@ -2914,20 +2902,7 @@ export default function App() {
               </button>
             </form>
 
-            <div className="pt-3 border-t border-[#F5EFE6] text-center">
-              <button
-                type="button"
-                onClick={() =>
-                  setAdminLoginForm({
-                    username: 'owner@drippers.ph',
-                    password: 'NasugbuCoffee2026!',
-                  })
-                }
-                className="text-xs font-semibold text-[#6F4E37] hover:text-[#3B241C] underline"
-              >
-                Demo Staff/Owner Quick-Fill (Testing Mode)
-              </button>
-            </div>
+            
           </div>
         </div>
       );
