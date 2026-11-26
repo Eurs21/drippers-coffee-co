@@ -826,10 +826,10 @@ export default function App() {
             name: m.name,
             category: m.category || 'Signature Coffee',
             description: m.description || '',
-            price: Number(m.price) || 0,
-            image: m.image || FALLBACK_COFFEE_IMG,
-            available: m.available !== false,
-            bestseller: Boolean(m.bestseller),
+            price: Number(m.base_price ?? m.price) || 0,
+            image: m.image_url || m.image || FALLBACK_COFFEE_IMG,
+            available: (m.is_available ?? m.available) !== false,
+            bestseller: Boolean(m.is_bestseller ?? m.bestseller),
             featured: Boolean(m.featured),
             isSample: Boolean(m.is_sample),
             enabledCustomizations: Array.isArray(m.enabled_customizations)
@@ -1293,25 +1293,51 @@ export default function App() {
     showToast(`Saved "${productData.name}" to menu.`);
 
     if (supabase) {
-      const { error } = await supabase.from('menu_items').upsert([
-        {
-          id: productData.id,
-          name: productData.name,
-          category: productData.category,
-          description: productData.description,
-          price: Number(productData.price) || 0,
-          image: productData.image,
-          available: Boolean(productData.available),
-          bestseller: Boolean(productData.bestseller),
-          featured: Boolean(productData.featured),
-          is_sample: Boolean(productData.isSample),
-          enabled_customizations: productData.enabledCustomizations || [],
-        },
-      ]);
-      if (error) {
-        console.warn('menu_items sync note:', error.message);
-      }
-    }
+  const isValidUuid =
+    typeof productData.id === 'string' &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      productData.id
+    );
+
+  const payload = {
+    ...(isValidUuid ? { id: productData.id } : {}),
+    name: productData.name,
+    category: productData.category,
+    description: productData.description || '',
+    base_price: Number(productData.price) || 0,
+    image_url: productData.image || '',
+    is_available: Boolean(productData.available),
+    is_bestseller: Boolean(productData.bestseller),
+    customizations: productData.customizations || {},
+    updated_at: new Date().toISOString(),
+  };
+
+  const { data: savedRow, error } = await supabase
+    .from('menu_items')
+    .upsert([payload], { onConflict: 'id' })
+    .select()
+    .single();
+
+  if (error) {
+    console.warn('menu_items sync note:', error.message);
+    showToast(`Saved locally, but Supabase sync failed: ${error.message}`, 'error');
+  } else if (savedRow) {
+    setProducts((prev) =>
+      prev.map((p) =>
+        p.id === productData.id
+          ? {
+              ...p,
+              id: savedRow.id,
+              price: Number(savedRow.base_price) || 0,
+              image: savedRow.image_url || FALLBACK_COFFEE_IMG,
+              available: savedRow.is_available !== false,
+              bestseller: Boolean(savedRow.is_bestseller),
+            }
+          : p
+      )
+    );
+  }
+}
   };
 
   const handleDeleteProduct = async (productId) => {
