@@ -1192,22 +1192,38 @@ export default function App() {
   // 5. ADMIN HANDLERS
   // ============================================================================
 
-  const handleAdminLogin = (e) => {
+  const handleAdminLogin = async (e) => {
     e.preventDefault();
-    if (
-      adminLoginForm.username.trim().toLowerCase() === 'owner@drippers.ph' &&
-      adminLoginForm.password === 'NasugbuCoffee2026!'
-    ) {
-      setIsAdminAuthenticated(true);
-      sessionStorage.setItem(STORAGE_KEYS.ADMIN_SESSION, 'authenticated');
-      setAdminLoginError('');
-      showToast("Welcome back to Dripper's Coffee Co. Admin Portal!");
-    } else {
-      setAdminLoginError('Invalid staff credentials. Please try again.');
+   setAdminLoginError('');
+
+    if (!supabase) {
+     setAdminLoginError('Supabase connection is not configured.');
+     return;
     }
+
+    const email = adminLoginForm.username.trim().toLowerCase();
+    const password = adminLoginForm.password;
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+     email,
+     password,
+    });
+
+    if (error || !data?.session) {
+     setAdminLoginError(error?.message || 'Invalid staff credentials. Please try again.');
+     return;
+    }
+
+    setIsAdminAuthenticated(true);
+    sessionStorage.setItem(STORAGE_KEYS.ADMIN_SESSION, 'authenticated');
+    setAdminLoginError('');
+    showToast("Welcome back to Dripper's Coffee Co. Admin Portal!");
   };
 
-  const handleAdminLogout = () => {
+  const handleAdminLogout = async () => {
+     if (supabase) {
+     await supabase.auth.signOut();
+   }
     setIsAdminAuthenticated(false);
     sessionStorage.removeItem(STORAGE_KEYS.ADMIN_SESSION);
     navigateTo('home');
